@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Intelligent Compiler - Symbol Table, Scope Management & Error Recovery</title>
+  <!-- Bootstrap 5 CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Brand Header -->
+  <header class="brand-header">
+    <div class="container-fluid px-4">
+      <div class="d-flex justify-content-between align-items-center">
+        <div>
+          <h3 class="brand-title mb-0">
+            <i class="bi bi-cpu-fill me-2"></i>Intelligent Compiler Education Tool
+          </h3>
+          <p class="text-muted small mb-0">Symbol Table Management, Scope Hierarchy, Semantic Diagnostics & Error Recovery Simulator</p>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+          <span class="brand-badge"><i class="bi bi-check2-circle me-1"></i>Panic Mode</span>
+          <span class="brand-badge"><i class="bi bi-magic me-1"></i>Phrase-Level Recovery</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="container-fluid px-4">
+    <div class="row g-4">
+
+      <!-- Left Column: Source Code Editor & Controls -->
+      <div class="col-lg-5 col-xl-4">
+        <div class="glass-panel">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="mb-0 text-light fw-bold"><i class="bi bi-code-square me-2 text-info"></i>Source Code Editor</h5>
+            <div class="dropdown">
+              <button class="btn btn-compiler-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                <i class="bi bi-journal-code me-1"></i>Preset Tests
+              </button>
+              <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow">
+                <li><a class="dropdown-item" href="#" id="load-test-1">Test 1 – Valid Nested Scope</a></li>
+                <li><a class="dropdown-item" href="#" id="load-test-2">Test 2 – Scope Violation</a></li>
+                <li><a class="dropdown-item" href="#" id="load-test-3">Test 3 – Redeclaration</a></li>
+                <li><a class="dropdown-item" href="#" id="load-test-4">Test 4 – Valid Shadowing</a></li>
+                <li><a class="dropdown-item" href="#" id="load-test-5">Test 5 – Undeclared Variable</a></li>
+                <li><a class="dropdown-item" href="#" id="load-test-6">Test 6 – Type Mismatch</a></li>
+                <li><a class="dropdown-item" href="#" id="load-test-7">Test 7 – Panic Mode Recovery</a></li>
+                <li><a class="dropdown-item" href="#" id="load-test-8">Test 8 – Phrase-Level Recovery</a></li>
+              </ul>
+            </div>
+          </div>
+
+          <!-- Code Editor Area -->
+          <div class="editor-wrapper mb-3">
+            <div class="editor-toolbar">
+              <span class="text-muted font-monospace small"><i class="bi bi-file-earmark-code me-1"></i>input.lang</span>
+              <span class="badge bg-secondary font-monospace" id="editor-line-count">17 Lines</span>
+            </div>
+            <textarea id="source-code" class="form-control code-editor p-3" spellcheck="false"></textarea>
+          </div>
+
+          <!-- Main Actions -->
+          <div class="d-flex gap-2 mb-3">
+            <button id="btn-analyze" class="btn btn-compiler-primary flex-grow-1">
+              <i class="bi bi-play-fill me-1 fs-5 align-middle"></i>Analyze Program
+            </button>
+            <button id="btn-load-example" class="btn btn-compiler-secondary" title="Reset Primary Sample Code">
+              <i class="bi bi-arrow-counterclockwise me-1"></i>Primary Code
+            </button>
+            <button id="btn-clear" class="btn btn-compiler-secondary" title="Clear Editor">
+              <i class="bi bi-trash me-1"></i>
+            </button>
+          </div>
+
+          <!-- Error Recovery Demonstration Presets Section -->
+          <div class="p-3 border border-secondary rounded-3 bg-dark bg-opacity-50">
+            <h6 class="text-warning fw-bold mb-2">
+              <i class="bi bi-tools me-1"></i>Error Recovery Demonstration
+            </h6>
+            <p class="text-muted small mb-2">Click to load invalid syntax snippets and observe recovery algorithms in action:</p>
+            <div class="d-flex gap-2">
+              <button id="btn-demo-panic" class="btn btn-recovery-panic btn-sm flex-grow-1">
+                <i class="bi bi-exclamation-octagon me-1"></i>Test Panic Mode
+              </button>
+              <button id="btn-demo-phrase" class="btn btn-recovery-phrase btn-sm flex-grow-1">
+                <i class="bi bi-magic me-1"></i>Test Phrase Recovery
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Summary Box -->
+        <div class="glass-panel">
+          <h6 class="text-light fw-bold mb-3"><i class="bi bi-speedometer2 me-2 text-cyan"></i>Analysis Status</h6>
+          <div id="quick-summary">
+            <div class="text-muted small">Run analysis to view scope summary and diagnostics.</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column: Visualization Dashboard -->
+      <div class="col-lg-7 col-xl-8">
+        <div class="glass-panel">
+          <!-- Navigation Tabs -->
+          <ul class="nav nav-tabs nav-tabs-compiler mb-3" id="compilerTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+              <button class="nav-link active" id="tab-symbol-table-btn" data-bs-toggle="tab" data-bs-target="#tab-symbol-table" type="button" role="tab">
+                <i class="bi bi-table me-1"></i>Symbol Table
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-scope-tree-btn" data-bs-toggle="tab" data-bs-target="#tab-scope-tree" type="button" role="tab">
+                <i class="bi bi-diagram-3 me-1"></i>Scope Hierarchy
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-resolution-btn" data-bs-toggle="tab" data-bs-target="#tab-resolution" type="button" role="tab">
+                <i class="bi bi-search me-1"></i>Symbol Resolution
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-ast-btn" data-bs-toggle="tab" data-bs-target="#tab-ast" type="button" role="tab">
+                <i class="bi bi-tree me-1"></i>AST
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-tokens-btn" data-bs-toggle="tab" data-bs-target="#tab-tokens" type="button" role="tab">
+                <i class="bi bi-list-nested me-1"></i>Tokens
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-errors-btn" data-bs-toggle="tab" data-bs-target="#tab-errors" type="button" role="tab">
+                <i class="bi bi-exclamation-triangle me-1"></i>Errors <span id="error-badge-count" class="badge bg-danger rounded-pill ms-1">0</span>
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-recovery-btn" data-bs-toggle="tab" data-bs-target="#tab-recovery" type="button" role="tab">
+                <i class="bi bi-arrow-repeat me-1"></i>Recovery Logs
+              </button>
+            </li>
+            <li class="nav-item" role="presentation">
+              <button class="nav-link" id="tab-explanation-btn" data-bs-toggle="tab" data-bs-target="#tab-explanation" type="button" role="tab">
+                <i class="bi bi-mortarboard me-1"></i>Why 'y' Error?
+              </button>
+            </li>
+          </ul>
+
+          <!-- Tab Contents -->
+          <div class="tab-content" id="compilerTabContents">
+
+            <!-- 1. Symbol Table Tab -->
+            <div class="tab-pane fade show active" id="tab-symbol-table" role="tabpanel">
+              <div class="table-responsive">
+                <table class="table table-compiler mb-0 align-middle">
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Type</th>
+                      <th>Kind</th>
+                      <th>Scope Name</th>
+                      <th>Level</th>
+                      <th>Memory Loc</th>
+                      <th>Parameters</th>
+                    </tr>
+                  </thead>
+                  <tbody id="symbol-table-body">
+                    <tr><td colspan="7" class="text-center text-muted">No symbols loaded. Click "Analyze Program".</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 2. Scope Hierarchy Tab -->
+            <div class="tab-pane fade" id="tab-scope-tree" role="tabpanel">
+              <div class="scope-tree" id="scope-tree-container">
+                <div class="text-muted">Scope tree will be rendered here.</div>
+              </div>
+            </div>
+
+            <!-- 3. Symbol Resolution Tab -->
+            <div class="tab-pane fade" id="tab-resolution" role="tabpanel">
+              <div class="table-responsive">
+                <table class="table table-compiler mb-0 align-middle">
+                  <thead>
+                    <tr>
+                      <th>Line</th>
+                      <th>Identifier</th>
+                      <th>Current Scope</th>
+                      <th>Resolved Target</th>
+                      <th>Shadowing Info</th>
+                    </tr>
+                  </thead>
+                  <tbody id="resolution-table-body">
+                    <tr><td colspan="5" class="text-center text-muted">Run analysis to view identifier resolution.</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- 4. AST Visualizer Tab -->
+            <div class="tab-pane fade" id="tab-ast" role="tabpanel">
+              <div class="ast-container" id="ast-container">
+                <div class="text-muted">AST nodes will be displayed here.</div>
+              </div>
+            </div>
+
+            <!-- 5. Token Stream Tab -->
+            <div class="tab-pane fade" id="tab-tokens" role="tabpanel">
+              <div id="tokens-container" class="d-flex flex-wrap p-2 border border-secondary rounded bg-dark">
+                <span class="text-muted">Tokens stream will appear here.</span>
+              </div>
+            </div>
+
+            <!-- 6. Semantic Errors Tab -->
+            <div class="tab-pane fade" id="tab-errors" role="tabpanel">
+              <div id="errors-container">
+                <!-- Error cards populated dynamically -->
+              </div>
+            </div>
+
+            <!-- 7. Recovery Logs Tab -->
+            <div class="tab-pane fade" id="tab-recovery" role="tabpanel">
+              <div id="recovery-logs-container">
+                <!-- Recovery logs populated dynamically -->
+              </div>
+            </div>
+
+            <!-- 8. Educational Explanation Tab -->
+            <div class="tab-pane fade" id="tab-explanation" role="tabpanel">
+              <div class="edu-box">
+                <h5><i class="bi bi-patch-question-fill text-warning me-2"></i>Why is variable <code>'y'</code> an Error?</h5>
+                <p>In the primary sample program:</p>
+                <pre class="bg-dark text-warning p-3 rounded font-monospace small border border-secondary">
+function calculate(a, b) {
+    int x = 5;
+
+    {
+        int y = x + a;   // &lt;-- 'y' is declared inside this inner block
+        float z = y * b;
+    }                    // &lt;-- Block Scope Level 2 ends here!
+
+    return x + y;        // &lt;-- ERROR: 'y' is accessed in Function Scope Level 1!
+}</pre>
+                <hr class="border-secondary">
+                <h6 class="text-light font-monospace fw-bold mb-2">Scope Lifetime Analysis:</h6>
+                <ol class="text-muted small lh-lg">
+                  <li><strong>Scope Level 2 Creation:</strong> Variable <code class="code-inline">y</code> is declared inside the nested block <code class="code-inline">{ ... }</code> at <strong>Block Scope Level 2</strong>.</li>
+                  <li><strong>Lifetime Boundary:</strong> The scope and visibility of <code class="code-inline">y</code> terminate immediately when the closing brace <code class="code-inline">}</code> of the inner block is executed.</li>
+                  <li><strong>Out of Scope Access:</strong> The statement <code class="code-inline">return x + y;</code> is located outside the inner block, in <strong>Function Scope Level 1</strong>.</li>
+                  <li><strong>Compiler Resolution Result:</strong> When resolving <code class="code-inline">y</code> in <code class="code-inline">return x + y;</code>, the compiler searches Function Scope Level 1 and Global Scope Level 0, but fails to find <code class="code-inline">y</code> because its scope has ended.</li>
+                </ol>
+                <div class="alert alert-info mb-0 small">
+                  <i class="bi bi-info-circle-fill me-1"></i>
+                  <strong>Suggested Fix:</strong> Declare <code class="code-inline">y</code> in the enclosing function scope (Level 1) before the inner block if its value must persist after the block finishes.
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Bootstrap 5 JS Bundle -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Compiler Engine Scripts -->
+  <script src="js/lexer.js"></script>
+  <script src="js/ast.js"></script>
+  <script src="js/parser.js"></script>
+  <script src="js/symbolTable.js"></script>
+  <script src="js/scopeManager.js"></script>
+  <script src="js/semanticAnalyzer.js"></script>
+  <script src="js/errorRecovery.js"></script>
+  <script src="js/errorReporter.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
